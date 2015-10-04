@@ -1,0 +1,25 @@
+<html>
+    <head>
+        <title>Find Free Food</title>
+    </head>
+    <body>
+        RESULTS:
+        <br>
+        <br>
+        {% for event in events %}
+            Event Name: {{ event.name }}
+            <br>
+            Event Owner: {{ event.owner.name }}
+            <br>
+            Start Time: {{ event.start_time }}
+            <br>
+            Venue: {{ event.venue.street }}, {{ event.venue.city }} {{ event.venue.state }}
+            <br>
+            ID: {{ event.id }}
+            <br>
+            Description: {{ event.description }}
+            <br>
+            <br>
+        {% endfor %}
+    </body>
+</html>

@@ -1,11 +1,12 @@
-import requests
+import requests, json
+import pandas as pd
 from requests_oauthlib import OAuth1
 #will need to import/query the database
 GRAPH_URL = "https://graph.facebook.com/search?q=berkeley&type=event&access_token="
-ACCESS_TOKEN = "CAACEdEose0cBAJC7Nx33jKgP5aUeEsr3jvNj4rosC1EVyAddsRBxgCmwDvVN3gYXqS37KuZCX22ZCTUoXavU2QZA5zVenT9mSEg3ZCJoNyW5UIWmkwja60ZBpFY67YrleA1EBeRl9cEmRtsNpeOSaHzZAZA3wFTgJ9pJEsznTMqazdit9wX7iAeDU0Sa9B6D1aqI2XxFQHytIZATWcs67usy"
+ACCESS_TOKEN = "CAACEdEose0cBAJq8OQlrFp9pY9b9WEEvCzQrMfZA30coxqZCqoOJ5eYMc7hgprgiuUPkmjSLlYIC7lulhIZB3uLTriOHhWhj1ZA60XMmYUePcvmAQVtrefwxUZCfzK3dDx46ErCcbCiarE2oTpchBfZBGu8qFZBp59RPf9a1tsUmLfzmuImEMatBSsNwrGnFx7nkKQGd6PQHYLpdRmPA4we"
 KEY = "902297456471999"
 SECRET = "c399b07485853239b90cd51bf0cdad77"
-EVENT_URL1 = "https://graph.facebook.com/"
+DOMAIN = "https://graph.facebook.com"
 EVENT_URL2 = "?access_token="
 auth = OAuth1(KEY, SECRET)
 strings = ["free", "Free", "FREE"]
@@ -28,12 +29,19 @@ def find_ids(string):
 def events_from_ids(id_list):
     event_list = list()
     count = 0
+    batch = list()
+    last = False
     for event_id in id_list:
-        url = EVENT_URL1+str(event_id)+EVENT_URL2+ACCESS_TOKEN
-        event_list.append(requests.get(url, auth=auth).content.decode(encoding = 'UTF-8'))
+        last = (event_id==id_list[-1])
+        url = str(event_id)
+        batch.append({"method":"GET", "relative_url":url})
         count+=1
-    print("done")
-    return [x for x in event_list if contains_query(x)]
+        if count == 50 or last:
+            data = {"access_token":ACCESS_TOKEN, "batch":json.dumps(batch)}
+            event_list.extend(requests.post(DOMAIN, params=data).json())
+            count = 0
+            batch = list()
+    return event_list
 
 def parse_field(event_list, field_name):
     field_list = list()
@@ -53,9 +61,20 @@ def parse_field(event_list, field_name):
 url = GRAPH_URL+ACCESS_TOKEN
 output = requests.get(url, auth=auth).content.decode(encoding = 'UTF-8')
 id_list = find_ids(output)
-minilist = id_list[:500]
-eventlist = events_from_ids(minilist)
-print(eventlist)
+minilist = id_list[:10]
+event_list = events_from_ids(minilist)
+for i in event_list:
+    del i['headers']
+events = list()
+for i in event_list:
+    events.append(json.loads(i['body']))
+df = pd.DataFrame(events)
+print(df)
+
+
+
+#event_split = event_string.split("\"id\":")
+#print(event_split)
 #name_list = parse_field(event_list, "name")
 #owner_list = parse_field(eventlist, "owner")
 #venue_list = parse_field(event_list, "venue")
